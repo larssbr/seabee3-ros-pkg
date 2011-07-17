@@ -1,0 +1,3 @@
+geometry_msgs/Point aspect_range
+geometry_msgs/Point dim_x_range
+geometry_msgs/Point dim_y_range
