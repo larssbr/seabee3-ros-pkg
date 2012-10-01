@@ -1,0 +1,28 @@
+<launch>
+    <arg name="source" default="/image_server/output_image" />
+
+    <arg name="pkg" value="ground_truth" />
+    <arg name="type" default="ground_truth" />
+    <arg name="name" default="$(arg type)" />
+    <arg name="rate" default="30" />
+
+    <arg name="args" value="_loop_rate:=$(arg rate) ~image:=$(arg source)" />
+
+    <arg name="manager" default="manager" />
+    <arg name="nodelet" default="false" />
+
+    <node
+        if="$(arg nodelet)"
+        pkg="nodelet"
+        type="nodelet"
+        name="$(arg name)"
+        args="load $(arg pkg)/$(arg type) $(arg manager) $(arg args)"
+        output="screen" />
+    <node
+        unless="$(arg nodelet)"
+        pkg="$(arg pkg)"
+        type="$(arg type)_node"
+        name="$(arg name)"
+        args="$(arg args)"
+        output="screen" />
+</launch>

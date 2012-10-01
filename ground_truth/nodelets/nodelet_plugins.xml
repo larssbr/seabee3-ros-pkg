@@ -1,0 +1,8 @@
+<library path="lib/libground_truth_nodelets">
+
+  <class name="ground_truth/ground_truth" type="ground_truth::groundTruthNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      todo: fill this in
+    </description>
+  </class>
+</library>
