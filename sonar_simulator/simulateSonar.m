@@ -9,7 +9,7 @@ pinger_frequency = available_pinger_frequency(1);
 max_frequency = available_pinger_frequency(length(available_pinger_frequency));
 
 % Sample rate
-sample_frequency = 100000;
+sample_frequency = 1000000;
 
 % Set arbitrary water temperature of 90F
 water_temp = 90;
@@ -31,7 +31,7 @@ pinger_radius = 1;
 
 % Arbitrary pinger location.
 phi= pi/2;
-theta = pi/2;
+theta = pi/4;
 rho = 10;
 
 % Generate the source signal
@@ -114,7 +114,7 @@ intersection_cartesian = intersection_cartesian(:, sqrt(intersection_cartesian(1
 intersection_rho = sqrt(intersection_cartesian(1,:).^2 + intersection_cartesian(2,:).^2 + intersection_cartesian(3,:).^2);
 
 intersection_spherical= [intersection_rho; acos(intersection_cartesian(3,:)./intersection_rho); atan2(intersection_cartesian(2,:),intersection_cartesian(1,:))];
-
+ 
 % Makes it so that taking the mean of theta at the pi/-pi singularity works
 if ~isempty(intersection_spherical(3, intersection_spherical(3,:) > 0)) && ~isempty(intersection_spherical(3, intersection_spherical(3,:) < 0))
     intersection_spherical(3,:) = abs(intersection_spherical(3,:));
