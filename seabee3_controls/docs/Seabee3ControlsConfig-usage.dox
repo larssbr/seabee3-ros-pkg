@@ -1,0 +1,8 @@
+\subsubsection usage Usage
+\verbatim
+<node name="dynamic_reconfigure_node" pkg="seabee3_controls" type="dynamic_reconfigure_node">
+  <param name="motor_speed_floor" type="int" value="15" />
+  <param name="motor_speed_deadzone" type="int" value="5" />
+</node>
+\endverbatim
+

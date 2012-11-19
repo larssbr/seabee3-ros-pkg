@@ -1,0 +1,15 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~fwd_right_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~fwd_left_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~depth_front_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~depth_back_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~strafe_top_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~strafe_bottom_thruster" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~slot_7" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~slot_8" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~slot_9" : \b [int] direction of this thruster min: -100, default: 0, max: 100
+- \b "~apply" : \b [bool] publish motor value state min: False, default: False, max: True
+

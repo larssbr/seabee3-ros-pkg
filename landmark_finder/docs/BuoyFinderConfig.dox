@@ -1,0 +1,8 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~aspect_ratio_mean" : \b [double]  min: 0.0, default: 1.12862, max: 10.0
+- \b "~aspect_ratio_variance" : \b [double]  min: 0.0, default: 0.3, max: 10.0
+- \b "~diameter_min" : \b [double]  min: 0.0, default: 50.0, max: 480.0
+

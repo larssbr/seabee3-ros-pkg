@@ -1,0 +1,29 @@
+\subsubsection usage Usage
+\verbatim
+<node name="dynamic_reconfigure_node" pkg="seabee3_driver" type="dynamic_reconfigure_node">
+  <param name="port" type="str" value="/dev/seabee/powerboard" />
+  <param name="motor_speed_floor" type="int" value="15" />
+  <param name="fwd_right_thruster_dir" type="int" value="-1" />
+  <param name="fwd_left_thruster_dir" type="int" value="-1" />
+  <param name="depth_front_thruster_dir" type="int" value="-1" />
+  <param name="depth_back_thruster_dir" type="int" value="1" />
+  <param name="strafe_top_thruster_dir" type="int" value="-1" />
+  <param name="strafe_bottom_thruster_dir" type="int" value="-1" />
+  <param name="shooter1_trigger_time" type="int" value="100" />
+  <param name="shooter1_trigger_value" type="int" value="75" />
+  <param name="shooter2_trigger_time" type="int" value="100" />
+  <param name="shooter2_trigger_value" type="int" value="-75" />
+  <param name="dropper1_trigger_time" type="int" value="125" />
+  <param name="dropper1_trigger_value" type="int" value="75" />
+  <param name="dropper2_trigger_time" type="int" value="125" />
+  <param name="dropper2_trigger_value" type="int" value="55" />
+  <param name="simulate" type="bool" value="False" />
+  <param name="is_killed" type="bool" value="True" />
+  <param name="override_kill_switch" type="bool" value="False" />
+  <param name="internal_pressure" type="int" value="3000" />
+  <param name="external_pressure" type="int" value="890" />
+  <param name="surface_pressure" type="int" value="890" />
+  <param name="montalbos_per_meter" type="double" value="37.5" />
+</node>
+\endverbatim
+

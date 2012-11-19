@@ -1,0 +1,14 @@
+\subsubsection usage Usage
+\verbatim
+<node name="dynamic_reconfigure_node" pkg="seabee3_physics" type="dynamic_reconfigure_node">
+  <param name="motor_val_to_force" type="double" value="0.011" />
+  <param name="buoyancy" type="bool" value="False" />
+  <param name="is_killed" type="bool" value="True" />
+  <param name="drag_enabled" type="bool" value="False" />
+  <param name="drag_constant" type="double" value="0.1" />
+  <param name="angular_drag_constant" type="double" value="0.01" />
+  <param name="gravity_enabled" type="bool" value="False" />
+  <param name="extra_buoyant_volume" type="double" value="0.0132" />
+</node>
+\endverbatim
+

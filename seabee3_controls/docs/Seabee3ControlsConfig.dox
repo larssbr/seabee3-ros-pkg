@@ -1,0 +1,7 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~motor_speed_floor" : \b [int] minimum non-zero motor speed min: 0, default: 15, max: 100
+- \b "~motor_speed_deadzone" : \b [int] speed at which scaling begins min: 0, default: 5, max: 100
+

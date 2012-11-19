@@ -1,0 +1,28 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~port" : \b [str] power board port name min: , default: /dev/seabee/powerboard, max: 
+- \b "~motor_speed_floor" : \b [int] minimum non-zero motor speed min: 0, default: 15, max: 100
+- \b "~fwd_right_thruster_dir" : \b [int] direction of this thruster min: -1, default: -1, max: 1
+- \b "~fwd_left_thruster_dir" : \b [int] direction of this thruster min: -1, default: -1, max: 1
+- \b "~depth_front_thruster_dir" : \b [int] direction of this thruster min: -1, default: -1, max: 1
+- \b "~depth_back_thruster_dir" : \b [int] direction of this thruster min: -1, default: 1, max: 1
+- \b "~strafe_top_thruster_dir" : \b [int] direction of this thruster min: -1, default: -1, max: 1
+- \b "~strafe_bottom_thruster_dir" : \b [int] direction of this thruster min: -1, default: -1, max: 1
+- \b "~shooter1_trigger_time" : \b [int] shooter1 pulse duration (ms) min: 0, default: 100, max: 1000
+- \b "~shooter1_trigger_value" : \b [int] shooter1 pulse amplitude min: -100, default: 75, max: 100
+- \b "~shooter2_trigger_time" : \b [int] shooter2 pulse duration (ms) min: 0, default: 100, max: 1000
+- \b "~shooter2_trigger_value" : \b [int] shooter2 pulse amplitude min: -100, default: -75, max: 100
+- \b "~dropper1_trigger_time" : \b [int] dropper1 pulse duration (ms) min: 0, default: 125, max: 1000
+- \b "~dropper1_trigger_value" : \b [int] dropper1 pulse amplitude min: -100, default: 75, max: 100
+- \b "~dropper2_trigger_time" : \b [int] dropper2 pulse duration (ms) min: 0, default: 125, max: 1000
+- \b "~dropper2_trigger_value" : \b [int] dropper2 pulse amplitude min: -100, default: 55, max: 100
+- \b "~simulate" : \b [bool] enable simulated values min: False, default: False, max: True
+- \b "~is_killed" : \b [bool] kill switch min: False, default: True, max: True
+- \b "~override_kill_switch" : \b [bool] override kill switch min: False, default: False, max: True
+- \b "~internal_pressure" : \b [int] internal pressure min: 0, default: 3000, max: 5000
+- \b "~external_pressure" : \b [int] external pressure min: 0, default: 890, max: 5000
+- \b "~surface_pressure" : \b [int] surface pressure min: 0, default: 890, max: 5000
+- \b "~montalbos_per_meter" : \b [double] montalbos / meter min: 0.0, default: 37.5, max: 100.0
+

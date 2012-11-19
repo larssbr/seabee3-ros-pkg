@@ -1,0 +1,9 @@
+\subsubsection usage Usage
+\verbatim
+<node name="dynamic_reconfigure_node" pkg="landmark_finder" type="dynamic_reconfigure_node">
+  <param name="aspect_ratio_mean" type="double" value="1.12862" />
+  <param name="aspect_ratio_variance" type="double" value="0.3" />
+  <param name="diameter_min" type="double" value="50.0" />
+</node>
+\endverbatim
+

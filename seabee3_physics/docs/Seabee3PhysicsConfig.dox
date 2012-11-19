@@ -1,0 +1,13 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~motor_val_to_force" : \b [double] motor_val to force min: 0.0, default: 0.011, max: 0.2
+- \b "~buoyancy" : \b [bool] buoyancy enable min: False, default: False, max: True
+- \b "~is_killed" : \b [bool] enable thursters min: False, default: True, max: True
+- \b "~drag_enabled" : \b [bool] enable drag min: False, default: False, max: True
+- \b "~drag_constant" : \b [double] drag constant min: 0.0, default: 0.1, max: 10.0
+- \b "~angular_drag_constant" : \b [double] angular drag constant min: 0.0, default: 0.01, max: 1.0
+- \b "~gravity_enabled" : \b [bool] enable gravity min: False, default: False, max: True
+- \b "~extra_buoyant_volume" : \b [double] floatation min: 0.0, default: 0.0132, max: 0.2
+
