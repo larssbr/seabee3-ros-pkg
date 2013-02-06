@@ -14,4 +14,6 @@ foreach( source ${ALL_SOURCES} )
     # rosbuild_add_executable( foo foo.cpp )
     rosbuild_add_executable( ${source_name} ${source_src} )
 
+    target_link_libraries( ${source_name} ${Eigen3_LIBRARIES} )
+
 endforeach( source )

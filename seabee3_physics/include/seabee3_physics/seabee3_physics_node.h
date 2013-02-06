@@ -2,7 +2,7 @@
  *  include/seabee3_physics/seabee3_physics_node.h
  *  --------------------
  *
- *  Copyright (c) 2011, Edward T. Kaszubski ( ekaszubski@gmail.com ), Dhruv Monga ( dhruvmonga@gmail.com )
+ *  Copyright (c) 2013, Edward T. Kaszubski ( ekaszubski@gmail.com ), Dhruv Monga ( dhruvmonga@gmail.com )
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -61,6 +61,7 @@
 #include <seabee3_physics/Seabee3PhysicsConfig.h>
 
 using namespace seabee3_common;
+using namespace Eigen;
 
 typedef seabee3_msgs::MotorVals _MotorValsMsg;
 typedef seabee3_msgs::KillSwitch _KillSwitchMsg;
@@ -91,6 +92,8 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
     std::map<std::string, XmlRpc::XmlRpcValue> structure_shapes_map_;
     std::map<std::string, double> structures_mass_;
     std::map<std::string, btTransform> transforms_map_;
+
+    btScalar seabee_mass;
 
     quickdev::Timer timer_;
 
@@ -200,13 +203,14 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
 
         // The world
         dynamics_world_ = quickdev::make_shared( new btDiscreteDynamicsWorld( dispatcher_.get(), broadphase_.get(), solver_.get(), collision_configuration_.get() ) );
+        dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
 
         // Seabee's Body
         seabee_shape_ = structures_map_["hull"];
 
-        seabee_motion_state_ = quickdev::make_shared( new btDefaultMotionState( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) ) ) );
+        seabee_motion_state_ = quickdev::make_shared( new btDefaultMotionState( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, -0.1 ) ) ) );
 
-        btScalar seabee_mass = structures_mass_["hull"];
+        seabee_mass = structures_mass_["hull"];
         std::cout << "hull has mass: " << seabee_mass << std::endl;
         btVector3 seabee_inertia( 0, 0, 0 );
         seabee_shape_->calculateLocalInertia( seabee_mass, seabee_inertia );
@@ -216,6 +220,11 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
         // prevent deactivation of seabee at low velocities
         seabee_body_->setActivationState( DISABLE_DEACTIVATION );
         dynamics_world_->addRigidBody( seabee_body_.get() );
+
+        // Seabee's initial position
+        //btTransform trans;
+        //seabee_body_->getMotionState()->getWorldTransform(trans);
+        //seabee_body_->translate( btVector3( 0, 0, -0.534973 - trans.getOrigin().getZ() ) );
 
         timer_.reset();
 
@@ -241,10 +250,14 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
 
     QUICKDEV_SPIN_ONCE()
     {
+
         auto const is_killed = is_killed_ && config_.is_killed;
 
         btVector3 const & linear_velocity = seabee_body_->getLinearVelocity();
         btVector3 const & angular_velocity = seabee_body_->getAngularVelocity();
+        btVector3 buoyant_force( 0, 0, 0 );
+        btVector3 gravity_force( 0, 0, 0 );
+        btVector3 gravity_vector(0, 0, -9.8 );
 
         // model the entire vehicle as a cylinder
         double const vehicle_radius = 0.1000125;
@@ -307,52 +320,64 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             }
         }
 
-        if( config_.gravity_enabled )
-        {
-            dynamics_world_->setGravity( btVector3( 0, 0, -9.8 ) );
-        }
-        else
-        {
-            dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
-        }
+        //if( config_.gravity_enabled )
+        //{
+        ////dynamics_world_->setGravity( btVector3( 0, 0, -9.8 ) );
+        ////seabee_body_->applyForce( btVector3( 0, 0, -9.8 ), btVector3( 0, 0, 0) );
+        ////dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
+        ////}
+        //else
+        //{
+        ////dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
+        ////seabee_body_->applyForce( btVector3( 0, 0, 0 ), btVector3( 0, 0, 0) );
+        //gravity_force.setZ( 0 );
+        //}
 
         // Apply buoyant force in upward direction, this is a temporary simple model of the actual buoyancy
         // Specifically, we assume the vehicle is cylidrical, then look at the volume of the vehicle below the water, which will be the same as
         // the volume of water displaced by the vehicle. Eventually, to maximize the accuracy of this calculation, we want to model each
         // component of the hull (in terms of volume and mass) and apply buoyant forces at the center of each of those components
-        if( config_.buoyancy )
+        //if( config_.buoyancy )
+        //{
+
+        gravity_force.setZ( gravity_vector.getZ() * seabee_mass );
+
+        double const water_density = 1000;
+
+        double volume_displaced = 0;
+
+        // fully below water
+        if( world_transform.getOrigin().getZ() < (-vehicle_dims.getZ() / 2 ) )
         {
-            btVector3 buoyant_force( 0, 0, 0 );
-
-            double const water_density = 1000;
-
-            double volume_displaced = 0;
-
-            // fully below water
-            if( world_transform.getOrigin().getZ() < -vehicle_dims.getZ() / 2 )
-            {
-                volume_displaced = vehicle_volume;
-            }
-            // fully above water
-            else if( world_transform.getOrigin().getZ() > vehicle_dims.getZ() / 2 )
-            {
-                volume_displaced = 0;
-            }
-            // somewhere in-between
-            else
-            {
-                // density of water * acceleration due to gravity * volume of water displaced
-                volume_displaced = ( ( vehicle_dims.getZ() / 2 - world_transform.getOrigin().getZ() ) / vehicle_dims.getZ() ) * vehicle_volume;
-            }
-
-            // we're assuming a calm surface, so we can make the buoyant force point straight up
-            buoyant_force.setZ( water_density * dynamics_world_->getGravity().length() * volume_displaced );
-
-            ROS_INFO( "Buoyancy force: %f; volume displaced / max volume displaced: %f / %f", buoyant_force.getZ(), volume_displaced, vehicle_volume );
-
-            // apply the buoyant force at the center of the vehicle
-            seabee_body_->applyForce( buoyant_force, btVector3( 0, 0, 0 ) );
+            volume_displaced = vehicle_volume;
         }
+        // fully above water
+        else if( world_transform.getOrigin().getZ() > (vehicle_dims.getZ() / 2 ) )
+        {
+            volume_displaced = 0;
+        }
+        // somewhere in-between
+        else
+        {
+            volume_displaced = ( ( vehicle_dims.getZ() / 2 - world_transform.getOrigin().getZ() ) / vehicle_dims.getZ() ) * vehicle_volume;
+        }
+
+        // density of water * acceleration due to gravity * volume of water displaced
+        // we're assuming a calm surface, so we can make the buoyant force point straight up
+        buoyant_force.setZ( -1 * water_density * gravity_vector.getZ() * volume_displaced );
+
+        ROS_INFO( "Buoyancy force: %f; volume displaced / max volume displaced: %f / %f", buoyant_force.getZ(), volume_displaced, vehicle_volume );
+
+        // apply the buoyant force at the center of the vehicle
+        //seabee_body_->applyForce( buoyant_force, btVector3( 0, 0, 0 ) );
+        //}
+
+        // sum the gravity and buouyancy vectors to get net force on submarine
+        btVector3 net_buoyancy_force = gravity_force + buoyant_force;
+
+        ROS_INFO( "Buoyancy force: %f, gravity: %f, total buoyant force from gravity and buoyancy: %f", buoyant_force.getZ(), gravity_force.getZ(), net_buoyancy_force.getZ() );
+
+        seabee_body_->applyForce( net_buoyancy_force, btVector3( 0, 0, 0 ) );
 
         if( config_.drag_enabled )
         {
@@ -380,8 +405,8 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
                     btVector3 drag_pt_u( sample_pt_u.x(), sample_pt_u.y(), 0 );
                     btVector3 drag_pt_v( sample_pt_v.x(), sample_pt_v.y(), 0 );
 
-                    printf( "ang drag force u: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_u.x(), sample_vec_u.y(), sample_vec_u.norm(), sample_pt_u.x(), sample_pt_u.y(), drag_vec_u.x(), drag_vec_u.y(), drag_vec_u.z(), drag_pt_u.x(), drag_pt_u.y(), drag_pt_u.z() );
-                    printf( "ang drag force v: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_v.x(), sample_vec_v.y(), sample_vec_v.norm(), sample_pt_v.x(), sample_pt_v.y(), drag_vec_v.x(), drag_vec_v.y(), drag_vec_v.z(), drag_pt_v.x(), drag_pt_v.y(), drag_pt_v.z() );
+                    //printf( "ang drag force u: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_u.x(), sample_vec_u.y(), sample_vec_u.norm(), sample_pt_u.x(), sample_pt_u.y(), drag_vec_u.x(), drag_vec_u.y(), drag_vec_u.z(), drag_pt_u.x(), drag_pt_u.y(), drag_pt_u.z() );
+                    //printf( "ang drag force v: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_v.x(), sample_vec_v.y(), sample_vec_v.norm(), sample_pt_v.x(), sample_pt_v.y(), drag_vec_v.x(), drag_vec_v.y(), drag_vec_v.z(), drag_pt_v.x(), drag_pt_v.y(), drag_pt_v.z() );
 
                     seabee_body_->applyForce( drag_vec_u, drag_pt_u );
                     seabee_body_->applyForce( -drag_vec_u, -drag_pt_u );
@@ -423,6 +448,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
                 world_transform.getOrigin().getZ() );
 
         _TfTranceiverPolicy::publishTransform( world_transform, "/world", "/seabee3/physics/pose" );
+
     }
 
     QUICKDEV_DECLARE_MESSAGE_CALLBACK( motorValsCB, _MotorValsMsg )
