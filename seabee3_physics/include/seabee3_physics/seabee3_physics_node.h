@@ -135,8 +135,6 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             result = boost::shared_ptr<btCollisionShape>( new btCylinderShapeX( btVector3( length / 2, width / 2, height / 2 ) ) );
         }
 
-        // if( result ) result->calculateLocalInertia( double( value["mass"] ), btVector3( 0, 0, 0 ) );
-
         return result;
     }
 
@@ -169,12 +167,11 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             // look up the dynamics entry for this structures_it
             auto structure_dynamics_it = structure_dynamics_map_.find( structures_it->second["dynamics"] );
             // get the shape entry for this structure
-//            auto structure_shape_it = structure_dynamics_param[structures_it->second["dynamics"]];
             // if it exists
             if( structure_dynamics_it != structure_dynamics_map_.end() )
             {
                 structures_map_[structures_it->first] = structure_dynamics_it->second;
-//                structure_shapes_map_[structures_it->first] = structure_shape_it->second;
+                // structure_shapes_map_[structures_it->first] = structure_shape_it->second;
 
                 btTransform current_transform = btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) );
 
@@ -217,14 +214,10 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
 
         btRigidBody::btRigidBodyConstructionInfo seabee_body_construction_info( seabee_mass, seabee_motion_state_.get(), seabee_shape_.get(), seabee_inertia );
         seabee_body_ = quickdev::make_shared( new btRigidBody( seabee_body_construction_info ) );
+
         // prevent deactivation of seabee at low velocities
         seabee_body_->setActivationState( DISABLE_DEACTIVATION );
         dynamics_world_->addRigidBody( seabee_body_.get() );
-
-        // Seabee's initial position
-        //btTransform trans;
-        //seabee_body_->getMotionState()->getWorldTransform(trans);
-        //seabee_body_->translate( btVector3( 0, 0, -0.534973 - trans.getOrigin().getZ() ) );
 
         timer_.reset();
 
@@ -320,26 +313,6 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             }
         }
 
-        //if( config_.gravity_enabled )
-        //{
-        ////dynamics_world_->setGravity( btVector3( 0, 0, -9.8 ) );
-        ////seabee_body_->applyForce( btVector3( 0, 0, -9.8 ), btVector3( 0, 0, 0) );
-        ////dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
-        ////}
-        //else
-        //{
-        ////dynamics_world_->setGravity( btVector3( 0, 0, 0 ) );
-        ////seabee_body_->applyForce( btVector3( 0, 0, 0 ), btVector3( 0, 0, 0) );
-        //gravity_force.setZ( 0 );
-        //}
-
-        // Apply buoyant force in upward direction, this is a temporary simple model of the actual buoyancy
-        // Specifically, we assume the vehicle is cylidrical, then look at the volume of the vehicle below the water, which will be the same as
-        // the volume of water displaced by the vehicle. Eventually, to maximize the accuracy of this calculation, we want to model each
-        // component of the hull (in terms of volume and mass) and apply buoyant forces at the center of each of those components
-        //if( config_.buoyancy )
-        //{
-
         gravity_force.setZ( gravity_vector.getZ() * seabee_mass );
 
         double const water_density = 1000;
@@ -368,10 +341,6 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
 
         ROS_INFO( "Buoyancy force: %f; volume displaced / max volume displaced: %f / %f", buoyant_force.getZ(), volume_displaced, vehicle_volume );
 
-        // apply the buoyant force at the center of the vehicle
-        //seabee_body_->applyForce( buoyant_force, btVector3( 0, 0, 0 ) );
-        //}
-
         // sum the gravity and buouyancy vectors to get net force on submarine
         btVector3 net_buoyancy_force = gravity_force + buoyant_force;
 
@@ -379,56 +348,65 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
 
         seabee_body_->applyForce( net_buoyancy_force, btVector3( 0, 0, 0 ) );
 
-        if( config_.drag_enabled )
+        // here we assume that the center of buoyancy/volume and the center of mass are aligned vertically at the center of the submarine
+        //btVector3 center_of_buoyancy( 0, 0, vehicle_dims.getZ() * 3/4 );
+        //btVector3 center_of_mass( 0, 0, vehicle_dims.getZ() * 1/4 );
+
+        // if the vehicle deviates in either pitch or roll, the center of mass will automatically try to orient itself under the center of volume. this motion obeys the same forumula that models a spring.
+
+        //btTransform positional_matrix = world_transform.getCenterOfMassTransform();
+        btQuaternion rotational_transform = world_transform.getRotation();
+        auto const spring_constant = 10; // this is currently arbitrary
+        btVector3 auto_correcting_torque;
+        auto const max_angle = 3.14;
+
+        if( rotational_transform.getZ() != 0 ) {
+            auto_correcting_torque.setZ( (rotational_transform.getZ()/max_angle) * -spring_constant );
+        }
+        if( rotational_transform.getY() != 0 ) {
+            auto_correcting_torque.setY( (rotational_transform.getY()/max_angle) * -spring_constant );
+        }
+        auto_correcting_torque.setX( 0 );
+
+        seabee_body_->applyTorque( auto_correcting_torque );
+
+
+        //if( config_.drag_enabled )
+        //{
+        auto const num_samples = config_.angular_drag_num_samples;
+        // x-y plane
         {
-            auto const num_samples = config_.angular_drag_num_samples;
-            // x-y plane
+            for( int i = 0; i < num_samples; ++i )
             {
-                for( int i = 0; i < num_samples; ++i )
-                {
-                    Eigen::Vector2d sample_pt_u( vehicle_dims.getX() / 2, -( 2 * i + 1 ) * vehicle_dims.getY() / ( 4 * num_samples ) );
-                    Eigen::Vector2d sample_pt_v( ( 2 * i + 1 ) * vehicle_dims.getX() / ( 4 * num_samples ), vehicle_dims.getY() / 2 );
+                Eigen::Vector2d sample_pt_u( vehicle_dims.getX() / 2, -( 2 * i + 1 ) * vehicle_dims.getY() / ( 4 * num_samples ) );
+                Eigen::Vector2d sample_pt_v( ( 2 * i + 1 ) * vehicle_dims.getX() / ( 4 * num_samples ), vehicle_dims.getY() / 2 );
 
-                    Eigen::Matrix2d normal_tf; //( 0, 1, -1, 0 );
-                    normal_tf << 0, -1, 1, 0;
+                Eigen::Matrix2d normal_tf; //( 0, 1, -1, 0 );
+                normal_tf << 0, -1, 1, 0;
 
-                    Eigen::Vector2d sample_vec_u = normal_tf * sample_pt_u;
-                    sample_vec_u.normalize();
-                    Eigen::Vector2d sample_vec_v = normal_tf * sample_pt_v;
-                    sample_vec_v.normalize();
+                Eigen::Vector2d sample_vec_u = normal_tf * sample_pt_u;
+                sample_vec_u.normalize();
+                Eigen::Vector2d sample_vec_v = normal_tf * sample_pt_v;
+                sample_vec_v.normalize();
 
-                    double const angular_velocity_axis = angular_velocity.getZ();
-                    double const angular_direction = angular_velocity_axis >= 0 ? 1 : -1;
+                double const angular_velocity_axis = angular_velocity.getZ();
+                double const angular_direction = angular_velocity_axis >= 0 ? 1 : -1;
 
-                    btVector3 drag_vec_u( angular_direction * -sample_vec_u.x() * pow( angular_velocity_axis * 2 * M_PI * sample_pt_u.norm(), 2 ) * config_.angular_drag_constant, 0, 0 );
-                    btVector3 drag_vec_v( 0, angular_direction * -sample_vec_v.y() * pow( angular_velocity_axis * 2 * M_PI * sample_pt_v.norm(), 2 ) * config_.angular_drag_constant, 0 );
-                    btVector3 drag_pt_u( sample_pt_u.x(), sample_pt_u.y(), 0 );
-                    btVector3 drag_pt_v( sample_pt_v.x(), sample_pt_v.y(), 0 );
+                btVector3 drag_vec_u( angular_direction * -sample_vec_u.x() * pow( angular_velocity_axis * 2 * M_PI * sample_pt_u.norm(), 2 ) * config_.angular_drag_constant, 0, 0 );
+                btVector3 drag_vec_v( 0, angular_direction * -sample_vec_v.y() * pow( angular_velocity_axis * 2 * M_PI * sample_pt_v.norm(), 2 ) * config_.angular_drag_constant, 0 );
+                btVector3 drag_pt_u( sample_pt_u.x(), sample_pt_u.y(), 0 );
+                btVector3 drag_pt_v( sample_pt_v.x(), sample_pt_v.y(), 0 );
 
-                    //printf( "ang drag force u: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_u.x(), sample_vec_u.y(), sample_vec_u.norm(), sample_pt_u.x(), sample_pt_u.y(), drag_vec_u.x(), drag_vec_u.y(), drag_vec_u.z(), drag_pt_u.x(), drag_pt_u.y(), drag_pt_u.z() );
-                    //printf( "ang drag force v: ( %f %f )[%f] @ ( %f %f ); ( %f %f %f ) @ ( %f %f %f )\n", sample_vec_v.x(), sample_vec_v.y(), sample_vec_v.norm(), sample_pt_v.x(), sample_pt_v.y(), drag_vec_v.x(), drag_vec_v.y(), drag_vec_v.z(), drag_pt_v.x(), drag_pt_v.y(), drag_pt_v.z() );
+                seabee_body_->applyForce( drag_vec_u, drag_pt_u );
+                seabee_body_->applyForce( -drag_vec_u, -drag_pt_u );
 
-                    seabee_body_->applyForce( drag_vec_u, drag_pt_u );
-                    seabee_body_->applyForce( -drag_vec_u, -drag_pt_u );
-
-                    seabee_body_->applyForce( drag_vec_v, drag_pt_v );
-                    seabee_body_->applyForce( -drag_vec_v, -drag_pt_v );
-                }
+                seabee_body_->applyForce( drag_vec_v, drag_pt_v );
+                seabee_body_->applyForce( -drag_vec_v, -drag_pt_v );
             }
+        }
 
-            // apply linear drag force on a per-axis basis
-            btVector3 const linear_velocity_unit_vec = linear_velocity.length() ? linear_velocity.normalized() : btVector3( 0, 0, 0 );
-
-            btVector3 drag_force = linear_velocity;
-            drag_force *= drag_force;
-            drag_force *= -config_.drag_constant;
-
-            if( linear_velocity.length() != 0 )
-            {
-                seabee_body_->applyForce( drag_force * linear_velocity_unit_vec, btVector3( 0, 0, 0 ) );
-            }
-
-            ROS_INFO( "Drag Force: %f ... Sub Speed: %f", drag_force.length(), linear_velocity.length() );
+        //apply linear drag force on a per-axis basis
+        btVector3 const linear_velocity_unit_vec = linear_velocity.length() ? linear_velocity.normalized() : btVector3( 0, 0, 0 );
 
         }
 
