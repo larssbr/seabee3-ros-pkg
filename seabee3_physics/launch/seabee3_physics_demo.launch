@@ -1,0 +1,25 @@
+<launch>
+    <arg name="gui" default="true" />
+    <arg name="visualize" default="true" />
+
+    <!-- Define Seabee's hull to be in the same pose as the physics simulator's estimate -->
+    <node pkg="tf" type="static_transform_publisher" name="physics_to_hull_tf" args="0 0 0 0 0 0 /seabee3/physics/pose /seabee3/hull 100" />
+
+    <include file="$(find seabee3_physics)/launch/seabee3_physics.launch" />
+
+    <include file="$(find seabee3_common)/launch/robot_model_transforms.launch" />
+
+    <include file="$(find quickdev_cpp)/launch/dynamic_reconfigure.launch" >
+        <arg name="enable" value="$(arg gui)" />
+        <arg name="name" value="seabee3_physics" />
+    </include>
+
+    <include file="$(find seabee3_driver)/launch/motor_values_gui.launch" >
+        <arg name="show_reconfigure" value="$(arg gui)" />
+    </include>
+
+    <group if="$(arg visualize)" >
+      <node pkg="rviz" name="rviz" type="rviz" />
+    </group>
+    
+</launch>
