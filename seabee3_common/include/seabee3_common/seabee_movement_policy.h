@@ -151,17 +151,17 @@ private:
     }
 */
     // #########################################################################################################################################
-    btTransform getTransform( std::string const & to_frame, std::string const & from_frame = "seabee3/current_pose" )
+    tf::Transform getTransform( std::string const & to_frame, std::string const & from_frame = "seabee3/current_pose" )
     {
-        return btTransform( _TfTranceiverPolicy::tryLookupTransform( from_frame, to_frame ) );
+        return tf::Transform( _TfTranceiverPolicy::tryLookupTransform( from_frame, to_frame ) );
     }
 
-    btTransform getCurrentTransform()
+    tf::Transform getCurrentTransform()
     {
         return getTransform( "seabee3/current_pose", "world" );
     }
 
-    btTransform getDesiredTransform()
+    tf::Transform getDesiredTransform()
     {
         return getTransform( "seabee3/desired_pose", "world" );
     }
@@ -289,7 +289,7 @@ private:
         {
             auto world_to_desired_pose = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/desired_pose" );
 
-            world_to_desired_pose.setRotation( btQuaternion( heading, 0, 0 ) );
+            world_to_desired_pose.setRotation( tf::Quaternion( heading, 0, 0 ) );
             _TfTranceiverPolicy::publishTransform( world_to_desired_pose, "/world", "/seabee3/desired_pose" );
 
             if( _TfTranceiverPolicy::transformExists( "/world", "/seabee3/current_pose" ) )
@@ -297,7 +297,7 @@ private:
                 auto world_to_current_pose = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
 
                 // constraints met
-                if( fabs( quickdev::angleBetween( unit::convert<btVector3>( world_to_current_pose.getRotation() ).getZ(), unit::convert<btVector3>( world_to_desired_pose.getRotation() ).getZ() ) ) < 0.05 * M_PI )
+                if( fabs( quickdev::angleBetween( unit::convert<tf::Vector3>( world_to_current_pose.getRotation() ).getZ(), unit::convert<tf::Vector3>( world_to_desired_pose.getRotation() ).getZ() ) ) < 0.05 * M_PI )
                 {
                     token.complete( true );
                     return;
@@ -310,7 +310,7 @@ private:
         token.cancel();
     }
 
-    quickdev::SimpleActionToken moveAtVelocity( btTransform const & velocity, _TermCriteria term_criteria = _TermCriteria() )
+    quickdev::SimpleActionToken moveAtVelocity( tf::Transform const & velocity, _TermCriteria term_criteria = _TermCriteria() )
     {
         quickdev::SimpleActionToken result;
         result.start( quickdev::auto_bind( quickdev::auto_bind( &SeabeeMovementPolicy::moveAtVelocityImpl, this ), velocity, result, term_criteria ) );
@@ -318,7 +318,7 @@ private:
         return result;
     }
 
-    void moveAtVelocityImpl( btTransform const & velocity, quickdev::SimpleActionToken token, _TermCriteria term_criteria )
+    void moveAtVelocityImpl( tf::Transform const & velocity, quickdev::SimpleActionToken token, _TermCriteria term_criteria )
     {
         _TwistMsg twist_msg = unit::implicit_convert( velocity );
         ros::Rate publish_rate( 10 );
@@ -335,26 +335,26 @@ private:
 
     quickdev::SimpleActionToken moveAtVelocity( Pose const & velocity )
     {
-        return moveAtVelocity( unit::convert<btTransform>( velocity ) );
+        return moveAtVelocity( unit::convert<tf::Transform>( velocity ) );
     }
 
     quickdev::SimpleActionToken moveAtVelocity( _TwistMsg const & velocity )
     {
-        return moveAtVelocity( unit::convert<btTransform>( velocity ) );
+        return moveAtVelocity( unit::convert<tf::Transform>( velocity ) );
     }
 
-    void setDesiredPose( btTransform const & pose )
+    void setDesiredPose( tf::Transform const & pose )
     {
         _TfTranceiverPolicy::publishTransform( pose, "/world", "/seabee3/desired_pose" );
     }
 
     void setDesiredPose( Pose const & pose )
     {
-        setDesiredPose( unit::convert<btTransform>( pose ) );
+        setDesiredPose( unit::convert<tf::Transform>( pose ) );
     }
 
     // move within a certain pose error of the given target; there must exist a transform from /seabee/base_link to <target>
-    quickdev::SimpleActionToken moveRelativeTo( std::string const & target, btTransform const & desired_distance_from_target, _TermCriteria term_criteria = _TermCriteria() )
+    quickdev::SimpleActionToken moveRelativeTo( std::string const & target, tf::Transform const & desired_distance_from_target, _TermCriteria term_criteria = _TermCriteria() )
     {
         quickdev::SimpleActionToken result;
         result.start( quickdev::auto_bind( quickdev::auto_bind( &SeabeeMovementPolicy::moveRelativeToImpl, this ), target, desired_distance_from_target, result, term_criteria ) );
@@ -362,26 +362,26 @@ private:
         return result;
     }
 
-    void moveRelativeToImpl( std::string const & target, btTransform const & desired_distance_from_target, quickdev::SimpleActionToken token, _TermCriteria term_criteria )
+    void moveRelativeToImpl( std::string const & target, tf::Transform const & desired_distance_from_target, quickdev::SimpleActionToken token, _TermCriteria term_criteria )
     {
         ros::Rate publish_rate( 10 );
 
-        btTransform world_to_self = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
-        btTransform world_to_target = _TfTranceiverPolicy::tryLookupTransform( "/world", target ) * desired_distance_from_target;
+        tf::Transform world_to_self = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
+        tf::Transform world_to_target = _TfTranceiverPolicy::tryLookupTransform( "/world", target ) * desired_distance_from_target;
 
         while( ( !term_criteria || !term_criteria() ) && token.ok() && ros::ok() )
         {
             world_to_self = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
             world_to_target = _TfTranceiverPolicy::tryLookupTransform( "/world", target ) * desired_distance_from_target;
 
-            btVector3 position_error = world_to_target.getOrigin() - world_to_self.getOrigin();
-            //double heading_error = 0; //unit::convert<btVector3>( world_to_target.getRotation() ).getZ() - world_to_self.getRotation() ).getZ();
-            double heading_error = unit::convert<btVector3>( world_to_self.getRotation().inverse() * world_to_target.getRotation() ).getZ();
+            tf::Vector3 position_error = world_to_target.getOrigin() - world_to_self.getOrigin();
+            //double heading_error = 0; //unit::convert<tf::Vector3>( world_to_target.getRotation() ).getZ() - world_to_self.getRotation() ).getZ();
+            double heading_error = unit::convert<tf::Vector3>( world_to_self.getRotation().inverse() * world_to_target.getRotation() ).getZ();
 
             if( world_to_target.getOrigin() != world_to_target.getOrigin() ) continue;
 
-            //_TfTranceiverPolicy::publishTransform( btTransform( btQuaternion( unit::convert<btVector3>( world_to_target.getRotation() ).getZ(), 0, 0 ), world_to_target.getOrigin() ), "/world", "/seabee3/desired_pose" );
-            _TfTranceiverPolicy::publishTransform( btTransform( btQuaternion( unit::convert<btVector3>( world_to_self.getRotation() ).getZ(), 0, 0 ), world_to_target.getOrigin() ), "/world", "/seabee3/desired_pose" );
+            //_TfTranceiverPolicy::publishTransform( tf::Transform( tf::Quaternion( unit::convert<tf::Vector3>( world_to_target.getRotation() ).getZ(), 0, 0 ), world_to_target.getOrigin() ), "/world", "/seabee3/desired_pose" );
+            _TfTranceiverPolicy::publishTransform( tf::Transform( tf::Quaternion( unit::convert<tf::Vector3>( world_to_self.getRotation() ).getZ(), 0, 0 ), world_to_target.getOrigin() ), "/world", "/seabee3/desired_pose" );
 
 /*
             if( position_error.length() < 0.2 && fabs( heading_error ) < M_PI_2 / 9 )
@@ -389,7 +389,7 @@ private:
                 token.complete( true );
 
                 // publish transform with current pose's rpy xy and the target frame's z
-                //_TfTranceiverPolicy::publishTransform( btTransform( world_to_self.getRotation(), btVector3( world_to_self.getOrigin().getX(), world_to_self.getOrigin().getY(), world_to_target.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
+                //_TfTranceiverPolicy::publishTransform( tf::Transform( world_to_self.getRotation(), tf::Vector3( world_to_self.getOrigin().getX(), world_to_self.getOrigin().getY(), world_to_target.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
 
                 return;
             }
@@ -398,7 +398,7 @@ private:
 
         }
 
-        //_TfTranceiverPolicy::publishTransform( btTransform( world_to_self.getRotation(), btVector3( world_to_self.getOrigin().getX(), world_to_self.getOrigin().getY(), world_to_target.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
+        //_TfTranceiverPolicy::publishTransform( tf::Transform( world_to_self.getRotation(), tf::Vector3( world_to_self.getOrigin().getX(), world_to_self.getOrigin().getY(), world_to_target.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
 
         token.cancel();
     }
@@ -413,7 +413,7 @@ private:
 
     void rotateSearchImpl( quickdev::SimpleActionToken parent_token, double const & min, double const & max, double const & velocity, quickdev::SimpleActionToken token, _TermCriteria term_criteria )
     {
-        btTransform const world_to_self = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
+        tf::Transform const world_to_self = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/current_pose" );
 
         ros::Rate update_rate( 20 );
         double const range = max - min;
@@ -421,9 +421,9 @@ private:
 
         while( ( !term_criteria || !term_criteria() ) && parent_token.ok() && token.ok() && ros::ok() )
         {
-            btTransform world_to_desired = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/desired_pose" );
+            tf::Transform world_to_desired = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/desired_pose" );
 
-            world_to_desired.setRotation( world_to_self.getRotation() * btQuaternion( ( range / 2 ) * cos( ( ros::Time::now() - start_time ).toSec() * M_PI * ( velocity / range ) ), 0, 0 ) );
+            world_to_desired.setRotation( world_to_self.getRotation() * tf::Quaternion( ( range / 2 ) * cos( ( ros::Time::now() - start_time ).toSec() * M_PI * ( velocity / range ) ), 0, 0 ) );
 
             _TfTranceiverPolicy::publishTransform( world_to_desired, "/world", "/seabee3/desired_pose" );
 

@@ -38,6 +38,7 @@
 
 #include <quickdev/action_token.h>
 #include <quickdev/geometry_message_conversions.h>
+#include <tf/transform_broadcaster.h>
 #include <quickdev/numeric_unit_conversions.h>
 #include <geometry_msgs/Pose.h>
 
@@ -287,30 +288,30 @@ DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Point, seabee::Position, point, r
 DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Position, geometry_msgs::Vector3, pos, geometry_msgs::Vector3 vec; vec.x = pos.x_; vec.y = pos.y_; vec.z = pos.z_; return vec; )
 DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Vector3, seabee::Position, vec, return seabee::Position( vec.x, vec.y, vec.z ); )
 // seabee::Position <-> btVector3
-DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Position, btVector3, pos, return btVector3( pos.x_, pos.y_, pos.z_ ); )
-DECLARE_UNIT_CONVERSION_LAMBDA( btVector3, seabee::Position, vec, return seabee::Position( vec.getX(), vec.getY(), vec.getZ() ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Position, tf::Vector3, pos, return tf::Vector3( pos.x_, pos.y_, pos.z_ ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( tf::Vector3, seabee::Position, vec, return seabee::Position( vec.getX(), vec.getY(), vec.getZ() ); )
 
 
 // seabee::Orientation <-> geometry_msgs::Vector3
 DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, geometry_msgs::Vector3, ori, geometry_msgs::Vector3 vec; vec.x = ori.yaw_; return vec; )
 DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Vector3, seabee::Orientation, vec, return seabee::Orientation( vec.x ); )
 // seabee::Orientation <-> btVector3
-DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, btVector3, ori, btVector3 vec; vec.x = ori.yaw_; return unit::convert<btVector3>( vec ); )
-DECLARE_UNIT_CONVERSION_LAMBDA( btVector3, seabee::Orientation, vec, return seabee::Orientation( vec.getX() ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, tf::Vector3, ori, tf::Vector3 vec; vec.x = ori.yaw_; return unit::convert<tf::Vector3>( vec ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( tf::Vector3, seabee::Orientation, vec, return seabee::Orientation( vec.getX() ); )
 // seabee::Orientation <-> geometry_msgs::Quaternion
 DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, geometry_msgs::Quaternion, ori, return unit::convert<geometry_msgs::Quaternion>( unit::convert<geometry_msgs::Vector3>( ori ) ); )
 DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Quaternion, seabee::Orientation, quat, return unit::convert<seabee::Orientation>( unit::convert<geometry_msgs::Vector3>( quat ) ); )
 // seabee::Orientation <-> btQuaternion
-DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, btQuaternion, ori, return unit::convert<btQuaternion>( unit::convert<geometry_msgs::Vector3>( ori ) ); )
-DECLARE_UNIT_CONVERSION_LAMBDA( btQuaternion, seabee::Orientation, quat, return unit::convert<seabee::Orientation>( unit::convert<geometry_msgs::Vector3>( quat ) ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Orientation, tf::Quaternion, ori, return unit::convert<tf::Quaternion>( unit::convert<geometry_msgs::Vector3>( ori ) ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( tf::Quaternion, seabee::Orientation, quat, return unit::convert<seabee::Orientation>( unit::convert<geometry_msgs::Vector3>( quat ) ); )
 
 
 // seabee::Pose <-> geometry_msgs::Twist
 DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Pose, geometry_msgs::Twist, pose, geometry_msgs::Twist twist; twist.linear = unit::implicit_convert( pose.position_ ); twist.angular = unit::implicit_convert( pose.orientation_ ); return twist; )
 DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Twist, seabee::Pose, twist, return seabee::Pose( unit::convert<seabee::Position>( twist.linear ), unit::convert<seabee::Orientation>( twist.angular ) ); )
 // seabee::Pose <-> btTransform
-DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Pose, btTransform, pose, return btTransform( unit::convert<btQuaternion>( pose.orientation_ ), unit::convert<btVector3>( pose.position_ ) ); )
-DECLARE_UNIT_CONVERSION_LAMBDA( btTransform, seabee::Pose, tf, return seabee::Pose( unit::convert<seabee::Position>( tf.getOrigin() ), unit::convert<seabee::Orientation>( tf.getRotation() ) ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Pose, tf::Transform, pose, return tf::Transform( unit::convert<tf::Quaternion>( pose.orientation_ ), unit::convert<tf::Vector3>( pose.position_ ) ); )
+DECLARE_UNIT_CONVERSION_LAMBDA( tf::Transform, seabee::Pose, tf, return seabee::Pose( unit::convert<seabee::Position>( tf.getOrigin() ), unit::convert<seabee::Orientation>( tf.getRotation() ) ); )
 // seabee::Pose <-> geometry_msgs::Pose
 DECLARE_UNIT_CONVERSION_LAMBDA( seabee::Pose, geometry_msgs::Pose, pose, geometry_msgs::Pose pose_msg; pose_msg.position = unit::implicit_convert( pose.position_ ); pose_msg.orientation = unit::implicit_convert( pose.orientation_ ); return pose_msg; )
 DECLARE_UNIT_CONVERSION_LAMBDA( geometry_msgs::Pose, seabee::Pose, pose_msg, return seabee::Pose( unit::convert<seabee::Position>( pose_msg.position ), unit::convert<seabee::Orientation>( pose_msg.orientation ) ); )

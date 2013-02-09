@@ -210,7 +210,7 @@ public:
             marker_msg.scale.x = size_.x_;
             marker_msg.scale.y = size_.y_;
             marker_msg.scale.z = size_.z_;
-            marker_msg.pose.orientation = unit::implicit_convert( btQuaternion( 0, -M_PI_2, 0 ) * btQuaternion( pose_.orientation_.yaw_ + M_PI_2, 0, 0 ) );
+            marker_msg.pose.orientation = unit::implicit_convert( tf::Quaternion( 0, -M_PI_2, 0 ) * tf::Quaternion( pose_.orientation_.yaw_ + M_PI_2, 0, 0 ) );
             break;
         }
 
@@ -259,7 +259,7 @@ public:
         cv::Point2d const center_point( pose_.position_.x_, pose_.position_.y_ );
         // ray to center of landmark
         cv::Point3d const center_ray = camera_model.projectPixelTo3dRay( center_point );
-        btVector3 const center_unit_vec( center_ray.x, center_ray.y, center_ray.z );
+        tf::Vector3 const center_unit_vec( center_ray.x, center_ray.y, center_ray.z );
 
         PRINT_INFO( "center pixel: %f %f", center_point.x, center_point.y );
         PRINT_INFO( "center ray: %f %f %f", center_unit_vec.getX(), center_unit_vec.getY(), center_unit_vec.getZ() );
@@ -276,7 +276,7 @@ public:
 
         // get the ray to a point on the radius of the object
         cv::Point3d const radius_ray = camera_model.projectPixelTo3dRay( radius_point );
-        btVector3 const radius_unit_vec( radius_ray.x, radius_ray.y, radius_ray.z );
+        tf::Vector3 const radius_unit_vec( radius_ray.x, radius_ray.y, radius_ray.z );
 
         PRINT_INFO( "radius pixel: %f %f", radius_point.x, radius_point.y );
         PRINT_INFO( "radius ray: %f %f %f", radius_unit_vec.getX(), radius_unit_vec.getY(), radius_unit_vec.getZ() );
@@ -288,7 +288,7 @@ public:
         double distance = radius_meters / tan( angle );
 
         // project the center ray out to the distance calculated
-        btVector3 center_vec = center_unit_vec * distance;
+        tf::Vector3 center_vec = center_unit_vec * distance;
 
         // update the position of the landmark given the newly projected center location
         pose_.position_.x_ = center_vec.getZ();
