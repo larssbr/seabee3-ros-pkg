@@ -159,10 +159,10 @@ protected:
                 {
                     double rect_angle = -rect.angle + 90;
 
-                    btQuaternion output_angle_quat( Radian( Degree( rect_angle ) ), 0, 0 );
-                    btQuaternion output_angle_quat2 = output_angle_quat * btQuaternion( M_PI, 0, 0 );
+                    tf::Quaternion output_angle_quat( Radian( Degree( rect_angle ) ), 0, 0 );
+                    tf::Quaternion output_angle_quat2 = output_angle_quat * tf::Quaternion( M_PI, 0, 0 );
 
-                    if( output_angle_quat.angle( btQuaternion( 0, 0, 0, 1 ) ) > output_angle_quat2.angle( btQuaternion( 0, 0, 0, 1 ) ) )
+                    if( output_angle_quat.angle( tf::Quaternion( 0, 0, 0, 1 ) ) > output_angle_quat2.angle( tf::Quaternion( 0, 0, 0, 1 ) ) )
                     {
                         output_angle_quat = output_angle_quat2;
                     }
@@ -170,7 +170,7 @@ protected:
                     Pipe pipe( Pose( Position( rect.center.x, rect.center.y ), Orientation( Radian( Degree( rect_angle ) ) ) ), Size( rect.size.width, rect.size.height ) );
                     pipe.projectTo3d( camera_model_ );
 
-                    _TfTranceiverPolicy::publishTransform( btTransform( btQuaternion( 0, -M_PI_2, 0 ) * output_angle_quat, unit::convert<btVector3>( pipe.pose_.position_ ) ) , "/seabee3/camera2", pipe.getUniqueName() );
+                    _TfTranceiverPolicy::publishTransform( tf::Transform( tf::Quaternion( 0, -M_PI_2, 0 ) * output_angle_quat, unit::convert<tf::Vector3>( pipe.pose_.position_ ) ) , "/seabee3/camera2", pipe.getUniqueName() );
                     pipes_.insert( pipe );
                 }
                 else

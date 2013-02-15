@@ -104,7 +104,7 @@ protected:
     QUICKDEV_DECLARE_NODE_CONSTRUCTOR( Seabee3Controls ),
         last_velocity_update_time_( ros::Time( 0 ) )
     {
-        transform_to_target_.setData( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) ) );
+        transform_to_target_.setData( tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( 0, 0, 0 ) ) );
     }
 
     QUICKDEV_SPIN_FIRST()
@@ -133,47 +133,47 @@ protected:
 
         initPolicies<quickdev::policy::ALL>();
 
-//        btVector3 const rotation = unit::implicit_convert( btQuaternion( 0.1, 0.2, 0.3 ) );
+//        tf::Vector3 const rotation = unit::implicit_convert( tf::Quaternion( 0.1, 0.2, 0.3 ) );
 //        printf( "%f %f %f\n", rotation.x(), rotation.y(), rotation.z() );
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::SPEED), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += linear_vec.x();
         msg.motors[motor2_id] += linear_vec.x();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::STRAFE), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += -linear_vec.y();
         msg.motors[motor2_id] += linear_vec.y();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::DEPTH), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += linear_vec.z();
         msg.motors[motor2_id] += linear_vec.z();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::YAW), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += angular_vec.z();
         msg.motors[motor2_id] += -angular_vec.z();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::PITCH), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += angular_vec.y();
         msg.motors[motor2_id] += -angular_vec.y();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::ROLL), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += angular_vec.x();
         msg.motors[motor2_id] += angular_vec.x();
@@ -181,7 +181,7 @@ protected:
 
     // how to set motor values for any axis
     template<int __Axis__>
-    void updateMotorValsMsg( _MotorValsMsg & msg, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsg( _MotorValsMsg & msg, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         auto const & motor1_id = movement::ThrusterPairs::values[__Axis__][0];
         auto const & motor2_id = movement::ThrusterPairs::values[__Axis__][1];
@@ -244,11 +244,11 @@ protected:
         auto const world_to_imu_tf = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/imu" );
         auto const world_to_depth_tf = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/depth" );
 
-        _TfTranceiverPolicy::publishTransform( btTransform( world_to_imu_tf.getRotation(), world_to_depth_tf.getOrigin() ), "/world", "/seabee3/givens" );
-        _TfTranceiverPolicy::publishTransform( btTransform( world_to_imu_tf.getRotation(), world_to_depth_tf.getOrigin() ), "/world", "/seabee3/current_pose" );
+        _TfTranceiverPolicy::publishTransform( tf::Transform( world_to_imu_tf.getRotation(), world_to_depth_tf.getOrigin() ), "/world", "/seabee3/givens" );
+        _TfTranceiverPolicy::publishTransform( tf::Transform( world_to_imu_tf.getRotation(), world_to_depth_tf.getOrigin() ), "/world", "/seabee3/current_pose" );
 
-        btVector3 linear_error_vec;
-        btVector3 angular_error_vec;
+        tf::Vector3 linear_error_vec;
+        tf::Vector3 angular_error_vec;
         {
             auto transform_to_target_lock = quickdev::make_unique_lock( transform_to_target_mutex_ );
             transform_to_target_ = _TfTranceiverPolicy::tryLookupTransform( "/seabee3/current_pose", "/seabee3/desired_pose" );
@@ -263,7 +263,7 @@ protected:
 /*
             if( ( now - transform_to_target.stamp_ ).toSec() > 0.5 )
             {
-                _TfTranceiverPolicy::publishTransform( btTransform( btQuaternion( 0, 0, 0, 1 ), transform_to_self_.getOrigin() ), "/world", "/seabee3/desired_pose" );
+                _TfTranceiverPolicy::publishTransform( tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), transform_to_self_.getOrigin() ), "/world", "/seabee3/desired_pose" );
             }
 */
             // calculate pose error
@@ -280,8 +280,8 @@ protected:
             angular_error_vec.z()
         );
 
-        btVector3 linear_output_vec;
-        btVector3 angular_output_vec;
+        tf::Vector3 linear_output_vec;
+        tf::Vector3 angular_output_vec;
 
         // update PIDs
         {
@@ -335,8 +335,8 @@ protected:
         {
             auto world_to_desired_pose_tf = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/desired_pose" );
             world_to_desired_pose_tf.getOrigin().setZ( world_to_desired_pose_tf.getOrigin().getZ() + msg->linear.z * ( now - last_velocity_update_time_ ).toSec() );
-            world_to_desired_pose_tf.setRotation( world_to_desired_pose_tf.getRotation() * btQuaternion( msg->angular.z * ( now - last_velocity_update_time_ ).toSec(), 0, 0 ) );
-            _TfTranceiverPolicy::publishTransform( btTransform( world_to_desired_pose_tf ), "/world", "/seabee3/desired_pose" );
+            world_to_desired_pose_tf.setRotation( world_to_desired_pose_tf.getRotation() * tf::Quaternion( msg->angular.z * ( now - last_velocity_update_time_ ).toSec(), 0, 0 ) );
+            _TfTranceiverPolicy::publishTransform( tf::Transform( world_to_desired_pose_tf ), "/world", "/seabee3/desired_pose" );
         }
 
         last_velocity_update_time_ = now;

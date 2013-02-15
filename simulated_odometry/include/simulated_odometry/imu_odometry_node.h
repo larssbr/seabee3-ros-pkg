@@ -61,17 +61,17 @@ protected:
     ros::MultiPublisher<> multi_pub_;
     ros::MultiSubscriber<> multi_sub_;
 
-    btTransform pose_;
-    btVector3 linear_velocity_;
-    btVector3 angular_velocity_;
+    tf::Transform pose_;
+    tf::Vector3 linear_velocity_;
+    tf::Vector3 angular_velocity_;
 
-    btVector3 net_compensated_linear_acceleration_;
+    tf::Vector3 net_compensated_linear_acceleration_;
     size_t num_samples_;
 
     _ImuMsg::ConstPtr last_imu_msg_;
 
     QUICKDEV_DECLARE_NODE_CONSTRUCTOR( IMUOdometry ),
-        pose_( btQuaternion( 0, 0, 0, 1 ) ),
+        pose_( tf::Quaternion( 0, 0, 0, 1 ) ),
         num_samples_( 0 )
     {
         //
@@ -95,13 +95,13 @@ protected:
         {
             double const dt = ( msg->header.stamp - last_imu_msg->header.stamp ).toSec();
 
-            btVector3 const linear_acceleration = unit::implicit_convert( msg->linear_acceleration );
+            tf::Vector3 const linear_acceleration = unit::implicit_convert( msg->linear_acceleration );
 
             printf( "dt: %f\n", dt );
             printf( "accel: %f %f %f (%f)\n", linear_acceleration.getX(), linear_acceleration.getY(), linear_acceleration.getZ(), linear_acceleration.length() );
 //            printf( "rot comp accel: %f %f %f (%f)\n", rotation_compensated_linear_acceleration.getX(), rotation_compensated_linear_acceleration.getY(), rotation_compensated_linear_acceleration.getZ(), rotation_compensated_linear_acceleration.length() );
 
-            btVector3 const change_in_linear_velocity = linear_acceleration * dt;
+            tf::Vector3 const change_in_linear_velocity = linear_acceleration * dt;
 
             printf( "change lin vel: %f %f %f\n", change_in_linear_velocity.getX(), change_in_linear_velocity.getY(), change_in_linear_velocity.getZ() );
 
@@ -113,18 +113,18 @@ protected:
 
             printf( "ang vel: %f %f %f\n", angular_velocity_.getX(), angular_velocity_.getY(), angular_velocity_.getZ() );
 
-            btVector3 const change_in_position = linear_velocity_ * dt;
+            tf::Vector3 const change_in_position = linear_velocity_ * dt;
 
             printf( "change pos: %f %f %f\n", change_in_position.getX(), change_in_position.getY(), change_in_position.getZ() );
 
-//            btVector3 const change_in_orientation_rpy = angular_velocity_ * dt;
-//            btQuaternion const change_in_orientation = unit::implicit_convert( change_in_orientation_rpy );
+//            tf::Vector3 const change_in_orientation_rpy = angular_velocity_ * dt;
+//            tf::Quaternion const change_in_orientation = unit::implicit_convert( change_in_orientation_rpy );
 
 //            printf( "change ori: %f %f %f\n", change_in_orientation_rpy.getX(), change_in_orientation_rpy.getY(), change_in_orientation_rpy.getZ() );
 
             pose_.setRotation( unit::implicit_convert( msg->orientation ) );
 
-            btTransform change_in_pose( btQuaternion( 0, 0, 0, 1 ), change_in_position );
+            tf::Transform change_in_pose( tf::Quaternion( 0, 0, 0, 1 ), change_in_position );
 
             pose_ *= change_in_pose;
         }

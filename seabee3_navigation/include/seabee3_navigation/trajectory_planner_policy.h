@@ -66,17 +66,17 @@ public:
     typedef seabee3_msgs::TrajectoryWaypoint _TrajectoryWaypointMsg;
 
 protected:
-    btVector3 max_linear_velocity_;
-    btVector3 max_angular_velocity_;
-    btTransform max_velocity_;
-    btVector3 max_linear_acceleration_;
-    btVector3 max_angular_acceleration_;
-    btTransform max_acceleration_;
+    tf::Vector3 max_linear_velocity_;
+    tf::Vector3 max_angular_velocity_;
+    tf::Transform max_velocity_;
+    tf::Vector3 max_linear_acceleration_;
+    tf::Vector3 max_angular_acceleration_;
+    tf::Transform max_acceleration_;
     double time_resolution_;
 
-    btTransform current_pose_;
-    btVector3 current_linear_velocity_;
-    btVector3 current_angular_velocity_;
+    tf::Transform current_pose_;
+    tf::Vector3 current_linear_velocity_;
+    tf::Vector3 current_angular_velocity_;
     _TrajectoryWaypointMsg last_output_waypoint_;
 
     QUICKDEV_MAKE_POLICY_FUNCS( TrajectoryPlanner )
@@ -112,7 +112,7 @@ protected:
         max_angular_velocity_.setY( quickdev::ParamReader::getXmlRpcValue<double>( angular_velocity, "y", 0.0 ) );
         max_angular_velocity_.setZ( quickdev::ParamReader::getXmlRpcValue<double>( angular_velocity, "z", 0.0 ) );
 
-        max_velocity_ = btTransform( unit::convert<btQuaternion>( max_angular_velocity_ ), max_linear_velocity_ );
+        max_velocity_ = tf::Transform( unit::convert<tf::Quaternion>( max_angular_velocity_ ), max_linear_velocity_ );
 
         auto acceleration = quickdev::ParamReader::getXmlRpcValue<XmlRpc::XmlRpcValue>( constraints, "acceleration" );
 
@@ -126,7 +126,7 @@ protected:
         max_angular_acceleration_.setY( quickdev::ParamReader::getXmlRpcValue<double>( angular_acceleration, "y", 0.0 ) );
         max_angular_acceleration_.setZ( quickdev::ParamReader::getXmlRpcValue<double>( angular_acceleration, "z", 0.0 ) );
 
-        max_acceleration_ = btTransform( unit::convert<btQuaternion>( max_angular_acceleration_ ), max_linear_acceleration_ );
+        max_acceleration_ = tf::Transform( unit::convert<tf::Quaternion>( max_angular_acceleration_ ), max_linear_acceleration_ );
 
         initPolicies<_MakeTrajectoryActionServerPolicy>( "action_name_param", action_name );
 
@@ -158,10 +158,10 @@ protected:
     }
 
     // update the simulated velocity, respecting any user-specified dynamics constraints
-    void changeVelocity( btTransform const & desired_velocity )
+    void changeVelocity( tf::Transform const & desired_velocity )
     {
         auto const desired_linear_velocity = desired_velocity.getOrigin();
-        auto const desired_angular_velocity = unit::convert<btVector3>( desired_velocity.getRotation() );
+        auto const desired_angular_velocity = unit::convert<tf::Vector3>( desired_velocity.getRotation() );
 
         if( fabs( current_linear_velocity_.getX() ) > max_linear_velocity_.getX() ) current_linear_velocity_.setX( quickdev::sign( current_linear_velocity_.getX() ) * max_linear_velocity_.getX() );
         if( fabs( current_linear_velocity_.getY() ) > max_linear_velocity_.getY() ) current_linear_velocity_.setY( quickdev::sign( current_linear_velocity_.getY() ) * max_linear_velocity_.getY() );
@@ -179,7 +179,7 @@ protected:
     }
 
     // create an interval from the given components, then add it to the list of intervals
-    void addInterval( double const & duration, btTransform const & acceleration, btTransform const & initial_pose, btTransform const & initial_velocity, std::vector<_TrajectoryIntervalMsg> & intervals )
+    void addInterval( double const & duration, tf::Transform const & acceleration, tf::Transform const & initial_pose, tf::Transform const & initial_velocity, std::vector<_TrajectoryIntervalMsg> & intervals )
     {
         _TrajectoryIntervalMsg interval;
 //        interval.length = duration;
@@ -191,7 +191,7 @@ protected:
 
     // create an interval from the given components (assuming that we started at the most recent waypoint), then add it to the list of intervals
     // and update our copy of the most recent waypoint
-    void addInterval( double const & duration, btTransform const & acceleration, std::vector<_TrajectoryIntervalMsg> & intervals )
+    void addInterval( double const & duration, tf::Transform const & acceleration, std::vector<_TrajectoryIntervalMsg> & intervals )
     {
         _TrajectoryIntervalMsg interval;
         interval.duration = duration;
@@ -206,10 +206,10 @@ protected:
     }
 
     // accelerate to a given linear/angular velocity respecting any user-specified constraints by generating and adding intervals to the list of intervals
-    void accelerateTo( btTransform const & desired_velocity, std::vector<_TrajectoryIntervalMsg> & intervals )
+    void accelerateTo( tf::Transform const & desired_velocity, std::vector<_TrajectoryIntervalMsg> & intervals )
     {
         auto const desired_linear_velocity = desired_velocity.getOrigin();
-        auto const desired_angular_velocity = unit::convert<btVector3>( desired_velocity.getRotation() );
+        auto const desired_angular_velocity = unit::convert<tf::Vector3>( desired_velocity.getRotation() );
 
         while
         (
@@ -225,7 +225,7 @@ protected:
             // v = at + v0
             auto velocity = max_acceleration_ * time_resolution_ + current_velocity_;
             auto linear_velocity = velocity.getOrigin();
-            auto angular_velocity = unit::convert<btVector3>( velocity.getRotation() );
+            auto angular_velocity = unit::convert<tf::Vector3>( velocity.getRotation() );
 
             if( current_linear_velocity_.getX() >= desired_linear_velocity.getX() ) linear_velocity.setX( 0 );
             if( current_linear_velocity_.getY() >= desired_linear_velocity.getY() ) linear_velocity.setY( 0 );
@@ -239,7 +239,7 @@ protected:
             current_pose_ = max_acceleration_ * time_resolution_ * time_resolution_ / 2 + current_velocity_ * time_resolution_ + current_pose_;
 
             // note that we update the velocity after updating the pose
-            changeVelocity( btTransform( unit::convert<btQuaternion>( angular_velocity ), linear_velocity ) );
+            changeVelocity( tf::Transform( unit::convert<tf::Quaternion>( angular_velocity ), linear_velocity ) );
 
             addInterval( time_resolution,  );
         }

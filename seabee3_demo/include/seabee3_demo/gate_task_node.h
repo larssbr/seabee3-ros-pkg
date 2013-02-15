@@ -180,12 +180,12 @@ protected:
     {
         double const timeout = quickdev::ParamReader::getXmlRpcValue<double>( action, "timeout" );
         XmlRpc::XmlRpcValue velocity = quickdev::ParamReader::getXmlRpcValue<XmlRpc::XmlRpcValue>( action, "value" );
-        btVector3 linear_velocity( velocity[0], velocity[1], velocity[2] );
-        btQuaternion angular_velocity( (double)Radian( Degree( velocity[5] ) ), (double)Radian( Degree( velocity[4] ) ), (double)Radian( Degree( velocity[3] ) ) );
+        tf::Vector3 linear_velocity( velocity[0], velocity[1], velocity[2] );
+        tf::Quaternion angular_velocity( (double)Radian( Degree( velocity[5] ) ), (double)Radian( Degree( velocity[4] ) ), (double)Radian( Degree( velocity[3] ) ) );
 
         PRINT_INFO( "Moving at velocity [ %f %f %f ] [ %f %f %f ] for %f seconds", linear_velocity.getX(), linear_velocity.getY(), linear_velocity.getZ(), (double)velocity[3], (double)velocity[4], (double)velocity[5], timeout );
 
-        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( btTransform( angular_velocity, linear_velocity ) );
+        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( tf::Transform( angular_velocity, linear_velocity ) );
         move_at_velocity_token_.wait( timeout );
         move_at_velocity_token_.cancel();
     }
@@ -211,13 +211,13 @@ protected:
         PRINT_INFO( "Rotating relative %f for %f seconds", angle, timeout );
 
         heading_token_.cancel();
-        heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<btVector3>( heading_transform.getRotation() ).getZ() + Radian( Degree( angle ) ) );
+        heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<tf::Vector3>( heading_transform.getRotation() ).getZ() + Radian( Degree( angle ) ) );
         heading_token_.wait( timeout );
     }
 
     void mainLoop()
     {
-        btTransform heading_transform;
+        tf::Transform heading_transform;
 
         while( QUICKDEV_GET_RUNABLE_POLICY()::running() )
         {
@@ -233,7 +233,7 @@ protected:
                 heading_transform = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/imu" );
             }
 
-            heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<btVector3>( heading_transform.getRotation() ).getZ() );
+            heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<tf::Vector3>( heading_transform.getRotation() ).getZ() );
 
             for( int i = 0; i < actions_.size() && !isKilled(); ++i )
             {
@@ -255,7 +255,7 @@ protected:
             // dive
             {
                 depth_token_ = _SeabeeMovementPolicy::diveTo( quickdev::ParamReader::getXmlRpcValue<double>( actions_, "depth", -3.0 ) );
-                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<btVector3>( heading_transform.getRotation() ).getZ() );
+                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<tf::Vector3>( heading_transform.getRotation() ).getZ() );
 
                 if( depth_token_.wait( 8.0 ) ) PRINT_INFO( "At depth" );
                 if( heading_token_.wait( 5.0 ) ) PRINT_INFO( "At heading" );
@@ -264,7 +264,7 @@ protected:
             {
                 double const velocity = quickdev::ParamReader::getXmlRpcValue<double>( "
                 PRINT_INFO( "Moving forward at %f%% thrust" );
-                move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( btTransform( btQuaternion( 0, 0, 0 ), btVector3( 0.6, 0, 0 ) ) );
+                move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( tf::Transform( tf::Quaternion( 0, 0, 0 ), tf::Vector3( 0.6, 0, 0 ) ) );
                 move_at_velocity_token_.wait( quickdev::ParamReader::getXmlRpcValue<int>( params_, "time", 240 ) );
                 move_at_velocity_token_.cancel();
             }

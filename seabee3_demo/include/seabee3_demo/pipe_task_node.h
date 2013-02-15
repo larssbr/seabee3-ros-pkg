@@ -167,13 +167,13 @@ protected:
 
     void mainLoop()
     {
-        btTransform heading_transform;
+        tf::Transform heading_transform;
 
         _CalibrateRPYSrv calibrate_ori_srv;
         calibrate_ori_srv.request.num_samples = 55;
         _CalibrateRPYOriServiceClientPolicy::callService( calibrate_ori_srv );
 
-        move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( "/pipe_orange", btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, -0.155575, 0.6 ) ) );
+        move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( "/pipe_orange", tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( 0, -0.155575, 0.6 ) ) );
 
         while( QUICKDEV_GET_RUNABLE_POLICY()::running() )
         {
@@ -189,7 +189,7 @@ protected:
             PRINT_INFO( "Diving" );
             // dive
             {
-                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<btVector3>( heading_transform.getRotation() ).getZ(), quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
+                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<tf::Vector3>( heading_transform.getRotation() ).getZ(), quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
                 depth_token_ = _SeabeeMovementPolicy::diveTo( -0.20, quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
 
                 if( depth_token_.wait( 4.0 ) ) PRINT_INFO( "At depth" );
@@ -203,7 +203,7 @@ protected:
             PRINT_INFO( "Moving forward" );
             // drive forward
             {
-                move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( btTransform( btQuaternion( 0, 0, 0 ), btVector3( 0.2, 0, 0 ) ), quickdev::action_token::make_term_criteria( find_landmark_token_ ) );
+                move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( tf::Transform( tf::Quaternion( 0, 0, 0 ), tf::Vector3( 0.2, 0, 0 ) ), quickdev::action_token::make_term_criteria( find_landmark_token_ ) );
                 move_at_velocity_token_.wait( 20 );
                 move_at_velocity_token_.cancel();
                 find_landmark_token_.cancel();
@@ -213,7 +213,7 @@ protected:
 
             heading_transform = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/imu" );
 /*
-            move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( Landmark( Pipe( Color( "orange" ) ) ), btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( -0.5, 0, 0 ) ) );
+            move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( Landmark( Pipe( Color( "orange" ) ) ), tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( -0.5, 0, 0 ) ) );
             if( move_relative_token_.wait( 60 ) )
             {
                 PRINT_INFO( "Hitting pipe" );
@@ -241,7 +241,7 @@ protected:
                 auto const & pipe = landmark_it->second;
 
                 heading_token_ = _SeabeeMovementPolicy::faceTo( pipe.pose_.orientation_.yaw_, quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
-                move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( landmark_it->first, btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0.8 ) ), quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
+                move_relative_token_ = _SeabeeMovementPolicy::moveRelativeTo( landmark_it->first, tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( 0, 0, 0.8 ) ), quickdev::auto_bind( &PipeTaskNode::isKilled, this ) );
                 if( move_relative_token_.wait( 20 ) )
                 {
                     PRINT_INFO( "Aligned to pipe" );

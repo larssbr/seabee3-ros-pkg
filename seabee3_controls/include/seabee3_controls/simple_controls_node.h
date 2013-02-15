@@ -91,17 +91,17 @@ protected:
     _TwistMsg::ConstPtr last_velocity_msg_ptr_;
     std::mutex last_velocity_mutex_;
 
-    btTransform world_to_desired_pose_tf_;
+    tf::Transform world_to_desired_pose_tf_;
     std::mutex world_to_desired_pose_mutex_;
 
-    btTransform world_to_current_pose_tf_;
+    tf::Transform world_to_current_pose_tf_;
     std::mutex world_to_current_pose_mutex_;
 
     ros::Time last_velocity_update_time_;
 
     QUICKDEV_DECLARE_NODE_CONSTRUCTOR( SimpleControls ),
         last_velocity_update_time_( ros::Time( 0 ) ),
-        world_to_desired_pose_tf_( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) ) )
+        world_to_desired_pose_tf_( tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( 0, 0, 0 ) ) )
     {
         //
     }
@@ -137,8 +137,8 @@ protected:
             // update depth according to incoming linear z velocity
             world_to_desired_pose_tf.getOrigin().setZ( world_to_desired_pose_tf.getOrigin().getZ() + msg->linear.z * ( now - last_velocity_update_time_ ).toSec() );
             // update heading according to incoming angular z velocity
-            world_to_desired_pose_tf.setRotation( world_to_desired_pose_tf.getRotation() * btQuaternion( msg->angular.z * ( now - last_velocity_update_time_ ).toSec(), 0, 0 ) );
-            _TfTranceiverPolicy::publishTransform( btTransform( world_to_desired_pose_tf ), "/world", "/seabee3/desired_pose" );
+            world_to_desired_pose_tf.setRotation( world_to_desired_pose_tf.getRotation() * tf::Quaternion( msg->angular.z * ( now - last_velocity_update_time_ ).toSec(), 0, 0 ) );
+            _TfTranceiverPolicy::publishTransform( tf::Transform( world_to_desired_pose_tf ), "/world", "/seabee3/desired_pose" );
         }
 
         last_velocity_update_time_ = now;
@@ -194,28 +194,28 @@ protected:
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::SPEED), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += -linear_vec.x();
         msg.motors[motor2_id] += -linear_vec.x();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::STRAFE), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += linear_vec.y();
         msg.motors[motor2_id] += -linear_vec.y();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::YAW), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += angular_vec.z();
         msg.motors[motor2_id] += -angular_vec.z();
     }
 
     template<int __Axis__, typename std::enable_if<(__Axis__ == movement::Axes::DEPTH), int>::type = 0>
-    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsgComponent( _MotorValsMsg & msg, int const & motor1_id, int const & motor2_id, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         msg.motors[motor1_id] += linear_vec.z();
         msg.motors[motor2_id] += -linear_vec.z();
@@ -223,7 +223,7 @@ protected:
 
     // how to set motor values for any axis
     template<int __Axis__>
-    void updateMotorValsMsg( _MotorValsMsg & msg, btVector3 const & linear_vec, btVector3 const & angular_vec )
+    void updateMotorValsMsg( _MotorValsMsg & msg, tf::Vector3 const & linear_vec, tf::Vector3 const & angular_vec )
     {
         auto const & motor1_id = movement::ThrusterPairs::values[__Axis__][0];
         auto const & motor2_id = movement::ThrusterPairs::values[__Axis__][1];
@@ -248,7 +248,7 @@ protected:
         auto const world_to_imu_tf = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/imu" );
         auto const world_to_depth_tf = _TfTranceiverPolicy::tryLookupTransform( "/world", "/seabee3/sensors/depth" );
 
-        btTransform current_to_desired_tf;
+        tf::Transform current_to_desired_tf;
 
         {
             auto world_to_desired_pose_lock = quickdev::make_unique_lock( world_to_desired_pose_mutex_ );
@@ -261,13 +261,13 @@ protected:
             current_to_desired_tf = world_to_current_pose_tf_.inverse() * world_to_desired_pose_tf_;
         }
 
-        btVector3 const linear_error_vec = unit::implicit_convert( current_to_desired_tf.getOrigin() );
-        btVector3 const angular_error_vec = unit::implicit_convert( current_to_desired_tf.getRotation() );
+        tf::Vector3 const linear_error_vec = unit::implicit_convert( current_to_desired_tf.getOrigin() );
+        tf::Vector3 const angular_error_vec = unit::implicit_convert( current_to_desired_tf.getRotation() );
 
         // motor value = linear velocity * 100; motor value : [ -100, 100 ]; linear velocity : [ -1.0, 1.0 ]
-        auto linear_output_vec = ( 100.0 / 1.0 ) * unit::convert<btVector3>( last_velocity_msg.linear );
+        auto linear_output_vec = ( 100.0 / 1.0 ) * unit::convert<tf::Vector3>( last_velocity_msg.linear );
         // motor value = angular velocity * 100 / ( PI/2 ); motor value : [ -100, 100 ]; linear velocity : [ -PI/2, PI/2 ]
-        auto angular_output_vec = ( 100.0 / M_PI_2 ) * unit::convert<btVector3>( last_velocity_msg.angular );
+        auto angular_output_vec = ( 100.0 / M_PI_2 ) * unit::convert<tf::Vector3>( last_velocity_msg.angular );
 
         // get control signal for depth
         linear_output_vec.setZ( -pid_.pids_[0].update( 0, linear_error_vec.z() ) );

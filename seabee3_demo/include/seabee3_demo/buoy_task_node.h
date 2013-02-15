@@ -200,18 +200,18 @@ protected:
 */
     void boopBuoy()
     {
-        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0.2, 0, 0 ) ), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
+        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( 0.2, 0, 0 ) ), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
         move_at_velocity_token_.wait( 6 );
         move_at_velocity_token_.cancel();
 
-        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( -0.4, 0, 0 ) ), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
+        move_at_velocity_token_ = _SeabeeMovementPolicy::moveAtVelocity( tf::Transform( tf::Quaternion( 0, 0, 0, 1 ), tf::Vector3( -0.4, 0, 0 ) ), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
         move_at_velocity_token_.wait( 6 );
         move_at_velocity_token_.cancel();
     }
 
     void mainLoop()
     {
-        btTransform heading_transform;
+        tf::Transform heading_transform;
 
         while( QUICKDEV_GET_RUNABLE_POLICY()::running() )
         {
@@ -227,7 +227,7 @@ protected:
             PRINT_INFO( "Diving" );
             // dive
             {
-                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<btVector3>( heading_transform.getRotation() ).getZ(), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
+                heading_token_ = _SeabeeMovementPolicy::faceTo( unit::convert<tf::Vector3>( heading_transform.getRotation() ).getZ(), quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
                 depth_token_ = _SeabeeMovementPolicy::diveTo( -0.35, quickdev::auto_bind( &BuoyTaskNode::isKilled, this ) );
 
                 if( depth_token_.wait( 4.0 ) ) PRINT_INFO( "At depth" );
@@ -267,7 +267,7 @@ protected:
                     auto world_to_buoy = _TfTranceiverPolicy::lookupTransform( "/world", "/buoy_orange" );
                     auto world_to_self = _TfTranceiverPolicy::lookupTransform( "/world", "/seabee3/current_pose" );
 
-                    _TfTranceiverPolicy::publishTransform( btTransform( world_to_self.getRotation(), btVector3( world_to_buoy.getOrigin().getX() - 1.0, world_to_buoy.getOrigin().getY(), world_to_buoy.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
+                    _TfTranceiverPolicy::publishTransform( tf::Transform( world_to_self.getRotation(), tf::Vector3( world_to_buoy.getOrigin().getX() - 1.0, world_to_buoy.getOrigin().getY(), world_to_buoy.getOrigin().getZ() ) ), "/world", "/seabee3/desired_pose" );
 
                     auto world_to_desired = _TfTranceiverPolicy::lookupTransform( "/world", "/seabee3/desired_pose" );
 

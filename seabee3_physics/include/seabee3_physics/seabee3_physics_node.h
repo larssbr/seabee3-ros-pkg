@@ -49,8 +49,9 @@
 #include <quickdev/threading.h>
 
 // utils
+#include <quickdev/geometry_message_conversions.h>
 #include <seabee3_common/movement.h>
-#include "btBulletDynamicsCommon.h"
+#include <btBulletDynamicsCommon.h>
 
 // msgs
 #include <seabee3_msgs/MotorVals.h>
@@ -104,7 +105,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
         //
     }
 
-    boost::shared_ptr<btCollisionShape> makeBtCollisionShape( XmlRpc::XmlRpcValue && value )
+    boost::shared_ptr<btCollisionShape> makeBtCollisionShape( XmlRpc::XmlRpcValue & value )
     {
         boost::shared_ptr<btCollisionShape> result;
 
@@ -125,7 +126,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             result = boost::shared_ptr<btCollisionShape>( new btCylinderShapeX( btVector3( length / 2, width / 2, height / 2 ) ) );
         }
 
-        // if( result ) result->calculateLocalInertia( double( value["mass"] ), btVector3( 0, 0, 0 ) );
+        // if( result ) result->calculateLocalInertia( double( value["mass"] ), tf::Vector3( 0, 0, 0 ) );
 
         return result;
     }
@@ -163,7 +164,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             {
                 structures_map_[structures_it->first] = structure_dynamics_it->second;
 
-                btTransform current_transform = btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) );
+                btTransform current_transform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 0, 0 ) );
 
                 // attempt to look up the transform from the parent of this structure to this structure
                 if( structures_it->second.hasMember( "parent" ) )
@@ -171,7 +172,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
                     std::string const parent_name = structures_it->second["parent"];
                     std::string const from_frame = structures_param[parent_name]["frame"];
                     std::string const to_frame = structures_it->second["frame"];
-                    current_transform = _TfTranceiverPolicy::tryLookupTransform( from_frame, to_frame );
+                    current_transform = unit::implicit_convert( tf::Transform( _TfTranceiverPolicy::tryLookupTransform( from_frame, to_frame ) ) );
                 }
 
                 transforms_map_[structures_it->first] = current_transform;
@@ -225,7 +226,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
             std::ostringstream stream;
             stream << "/seabee3/thruster" << ( i + 1 );
 
-            thruster_transforms_[i] = lookupTransform( "/seabee3/hull", stream.str() );
+            thruster_transforms_[i] = unit::convert<btTransform>( tf::Transform( _TfTranceiverPolicy::lookupTransform( "/seabee3/hull", stream.str() ) ) );
         }
     }
 
@@ -244,13 +245,13 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
         seabee_body_->getMotionState()->getWorldTransform( world_transform );
 
         // apply forces from thrusters
-        if( !is_killed_ || !config_.is_killed)
+        if( !is_killed_ || !config_.is_killed )
         {
-            for ( size_t i = 0; i < movement::NUM_THRUSTERS; i++ )
+            for( size_t i = 0; i < movement::NUM_THRUSTERS; i++ )
             {
                 if( !movement::MotorControllerIDs::isThruster( i ) ) continue;
 
-                auto const thrust = is_killed ? 0.0 : thruster_values_.at(i) * (thrust_to_force + 0.1 * linear_velocity.getX());
+                auto const thrust = is_killed ? 0.0 : thruster_values_.at(i) * thrust_to_force;
 
                 auto const & current_thruster_tf = thruster_transforms_.at(i);
 
@@ -328,7 +329,7 @@ QUICKDEV_DECLARE_NODE_CLASS( Seabee3Physics )
                 world_transform.getOrigin().getY(),
                 world_transform.getOrigin().getZ() );
 
-        _TfTranceiverPolicy::publishTransform( world_transform, "/world", "/seabee3/physics/pose" );
+        _TfTranceiverPolicy::publishTransform( unit::convert<tf::Transform>( world_transform ), "/world", "/seabee3/physics/pose" );
     }
 
     QUICKDEV_DECLARE_MESSAGE_CALLBACK( motorValsCB, _MotorValsMsg )

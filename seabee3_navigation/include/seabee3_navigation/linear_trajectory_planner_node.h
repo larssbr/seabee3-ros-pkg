@@ -94,9 +94,9 @@ QUICKDEV_DECLARE_NODE_CLASS( LinearTrajectoryPlanner )
             auto const & waypoint = *waypoints_it;
 
             // slow down
-            _TrajectoryPlannerPolicy::accelerateTo( btTransform( btQuaternion( 0, 0, 0 ), btVector3( 0, 0, 0 ) ), intervals );
+            _TrajectoryPlannerPolicy::accelerateTo( tf::Transform( tf::Quaternion( 0, 0, 0 ), tf::Vector3( 0, 0, 0 ) ), intervals );
 
-            auto const waypoint_tf = unit::convert<btTransform>( waypoint.pose );
+            auto const waypoint_tf = unit::convert<tf::Transform>( waypoint.pose );
 
             // turn to face the current waypoint
             alignTo( waypoint_tf, intervals );

@@ -58,8 +58,8 @@ QUICKDEV_DECLARE_NODE_CLASS( DragCalibration )
     ros::MultiPublisher<> multi_pub_;
 
     double forward_velocity_;
-    btTransform starting_transform_;
-    btTransform output_transform_;
+    tf::Transform starting_transform_;
+    tf::Transform output_transform_;
 
     QUICKDEV_DECLARE_NODE_CONSTRUCTOR( DragCalibration )
     {
@@ -77,7 +77,7 @@ QUICKDEV_DECLARE_NODE_CLASS( DragCalibration )
         _TwistMsg velocity_msg;
         velocity_msg.linear.z = -0.05;
 
-        btTransform current_pose;
+        tf::Transform current_pose;
 
         do
         {
