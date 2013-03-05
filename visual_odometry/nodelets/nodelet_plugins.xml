@@ -1,0 +1,20 @@
+<library path="lib/libvisual_odometry_nodelets">
+
+  <class name="visual_odometry/visual_odometry" type="visual_odometry::VisualOdometryNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      todo: fill this in
+    </description>
+  </class>
+
+  <class name="visual_odometry/visual_altimeter" type="visual_odometry::VisualAltimeterNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      todo: fill this in
+    </description>
+  </class>
+
+  <class name="visual_odometry/laser_dot_finder" type="visual_odometry::LaserDotFinderNodelet" base_class_type="nodelet::Nodelet">
+    <description>
+      todo: fill this in
+    </description>
+  </class>
+</library>
