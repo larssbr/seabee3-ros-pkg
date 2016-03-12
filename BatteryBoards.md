@@ -1,0 +1,2 @@
+# Status #
+This project has been discontinued. Planned functionality has been moved to the [Power Board](http://code.google.com/p/seabee3-ros-pkg/wiki/PowerBoardV2) and to integrated cell balancing circuits on the [new batteries](http://code.google.com/p/seabee3-ros-pkg/wiki/Batteries).
